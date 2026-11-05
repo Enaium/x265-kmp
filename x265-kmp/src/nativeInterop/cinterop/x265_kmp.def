@@ -4,7 +4,7 @@ compilerOpts = -std=c11
 # runtime to the link line by default on these targets.
 linkerOpts.linux_x64 = -lstdc++ -lm -lpthread -ldl
 linkerOpts.linux_arm64 = -lstdc++ -lm -lpthread -ldl
-linkerOpts.mingw_x64 = -lstdc++ -lwinpthread -lm
+linkerOpts.mingw_x64 = -lstdc++ -lm
 linkerOpts.macos_x64 = -lc++ -lm
 linkerOpts.macos_arm64 = -lc++ -lm
 linkerOpts.ios_arm64 = -lc++ -lm

@@ -124,6 +124,17 @@ set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/x265_kmp.cc"
 # line expect: libx265_kmp.a on Unix/MinGW.
 set_target_properties(x265-static PROPERTIES OUTPUT_NAME x265_kmp)
 
+option(XKY_LEGACY_GLIBC "Provide symbols missing from Kotlin/Native's Linux sysroot" OFF)
+
+if(XKY_LEGACY_GLIBC AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  # Kotlin/Native links Linux programs against an older glibc than the one the
+  # archive is compiled with; see the file for the C23 entry points it needs.
+  target_sources(x265-static PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/x265_linux_compat.c")
+  set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/x265_linux_compat.c"
+    TARGET_DIRECTORY x265-static
+    PROPERTIES COMPILE_FLAGS "-std=c11")
+endif()
+
 if(EMSCRIPTEN OR CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   # Emscripten has no POSIX named semaphores; x265's shared-statistics ring
   # buffer references them even though this binding never enables multi-pass.

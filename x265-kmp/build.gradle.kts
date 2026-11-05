@@ -558,17 +558,33 @@ if (hostOs.isMacOsX) {
         "-DCMAKE_OSX_DEPLOYMENT_TARGET=5.0",
     ))
 } else if (hostOs.isLinux) {
-    registerNativeBuildTasks("linuxX64")
-    if (System.getProperty("os.arch").lowercase() in listOf("aarch64", "arm64")) {
-        registerNativeBuildTasks("linuxArm64")
+    // Kotlin/Native links Linux programs against its bundled sysroot (glibc
+    // 2.19 on x64, 2.25 on arm64). Two consequences for the archive compiled
+    // with the host's much newer glibc and gcc:
+    //  - gcc vectorises log()/atan2() into libmvec calls that sysroot does not
+    //    provide, so tree vectorisation is turned off (the hand-written asm
+    //    kernels are unaffected);
+    //  - aarch64 emit calls to the outlined-atomics helpers, which that sysroot
+    //    does not export either.
+    val kotlinNativeLinuxFlags = listOf(
+        "-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG -fno-tree-vectorize",
+        "-DXKY_LEGACY_GLIBC=ON",
+    )
+    registerNativeBuildTasks("linuxX64", kotlinNativeLinuxFlags)
+    val arm64Flags = if (System.getProperty("os.arch").lowercase() in listOf("aarch64", "arm64")) {
+        kotlinNativeLinuxFlags
     } else {
-        registerNativeBuildTasks("linuxArm64", listOf(
+        kotlinNativeLinuxFlags + listOf(
             "-DCMAKE_SYSTEM_NAME=Linux",
             "-DCMAKE_SYSTEM_PROCESSOR=aarch64",
             "-DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc",
             "-DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++",
-        ))
+        )
     }
+    registerNativeBuildTasks("linuxArm64", arm64Flags + listOf(
+        "-DCMAKE_C_FLAGS=-mno-outline-atomics",
+        "-DCMAKE_CXX_FLAGS=-mno-outline-atomics",
+    ))
     registerNativeBuildTasks("mingwX64", listOf(
         "-DCMAKE_SYSTEM_NAME=Windows",
         "-DCMAKE_SYSTEM_PROCESSOR=x86_64",

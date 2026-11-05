@@ -99,15 +99,29 @@ extern "C" int xky_api_build(void) { return X265_BUILD; }
 
 extern "C" int xky_api_major(void) { return X265_MAJOR_VERSION; }
 
-extern "C" int xky_version_packed(void) {
-  int major = 0;
-  int minor = 0;
-  int patch = 0;
-  const char* version = x265_version_str;
-  if (version) {
-    /* The library reports "4.2"; future releases may add a third component. */
-    sscanf(version, "%d.%d.%d", &major, &minor, &patch);
+namespace {
+
+int parseVersionPart(const char** cursor) {
+  int value = 0;
+  while (**cursor >= '0' && **cursor <= '9') {
+    value = value * 10 + (**cursor - '0');
+    ++*cursor;
   }
+  return value;
+}
+
+}  // namespace
+
+extern "C" int xky_version_packed(void) {
+  /* The library reports "4.2"; future releases may add a third component.
+   * Parsed by hand: glibc 2.38+ redirects sscanf() to __isoc23_sscanf(), which
+   * Kotlin/Native's older Linux sysroot does not export. */
+  const char* cursor = x265_version_str ? x265_version_str : "";
+  const int major = parseVersionPart(&cursor);
+  if (*cursor == '.') ++cursor;
+  const int minor = parseVersionPart(&cursor);
+  if (*cursor == '.') ++cursor;
+  const int patch = parseVersionPart(&cursor);
   return major * 10000 + minor * 100 + patch;
 }
 
