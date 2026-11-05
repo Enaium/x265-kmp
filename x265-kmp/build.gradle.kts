@@ -577,7 +577,14 @@ if (hostOs.isMacOsX) {
         "-DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres",
     ))
 } else if (hostOs.isWindows) {
-    registerNativeBuildTasks("mingwX64")
+    // CMake would pick the Visual Studio generator on a stock Windows runner,
+    // producing an MSVC archive the MinGW-based Kotlin/Native link cannot use.
+    registerNativeBuildTasks("mingwX64", listOf(
+        "-G", "MinGW Makefiles",
+        "-DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc",
+        "-DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++",
+        "-DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres",
+    ))
 }
 
 // ==================== Android JNI shared libraries ====================
