@@ -125,6 +125,14 @@ set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/x265_kmp.cc"
 set_target_properties(x265-static PROPERTIES OUTPUT_NAME x265_kmp)
 
 option(XKY_LEGACY_GLIBC "Provide symbols missing from Kotlin/Native's Linux sysroot" OFF)
+option(XKY_LEGACY_MINGW "Provide symbols missing from Kotlin/Native's MinGW sysroot" OFF)
+
+if(XKY_LEGACY_MINGW AND WIN32)
+  target_sources(x265-static PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/x265_mingw_compat.cpp")
+  set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/x265_mingw_compat.cpp"
+    TARGET_DIRECTORY x265-static
+    PROPERTIES COMPILE_FLAGS "-std=c++17")
+endif()
 
 if(XKY_LEGACY_GLIBC AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
   # Kotlin/Native links Linux programs against an older glibc than the one the

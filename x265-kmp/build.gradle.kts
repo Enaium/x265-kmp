@@ -591,6 +591,9 @@ if (hostOs.isMacOsX) {
         "-DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc",
         "-DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++",
         "-DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres",
+        // See jni/x265_mingw_compat.cpp: the archive is compiled with a newer
+        // libstdc++ than the one Kotlin/Native links.
+        "-DXKY_LEGACY_MINGW=ON",
     ))
 } else if (hostOs.isWindows) {
     // CMake would pick the Visual Studio generator on a stock Windows runner,
@@ -600,6 +603,7 @@ if (hostOs.isMacOsX) {
         "-DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc",
         "-DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++",
         "-DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres",
+        "-DXKY_LEGACY_MINGW=ON",
     ))
 }
 
