@@ -53,6 +53,9 @@ val configureJniLibrary = tasks.register<Exec>("configureJniLibrary") {
         "-DJNI_INCLUDE_DIR=$jniInclude",
         "-DJNI_INCLUDE_DIR_PLATFORM=$jniInclude/win32",
         "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${outDir.absolutePath}",
+        // DLLs are RUNTIME artifacts in CMake; without this the Windows build
+        // writes x265_jni.dll into the CMake build tree.
+        "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${outDir.absolutePath}",
         "-G", if (System.getenv("MSYSTEM") != null) "MSYS Makefiles" else "MinGW Makefiles",
     )
 }
