@@ -76,8 +76,10 @@ val buildJniLibrary = tasks.register<Exec>("buildJniLibrary") {
 
 tasks.named<Copy>("processResources") {
     dependsOn(buildJniLibrary)
-    from(buildJniLibrary.map { it.outputs.files }) {
-        include(libFile)
+    // Copy the archive through its provider instead of the task's output
+    // collection: the latter is filtered by an include pattern and was empty
+    // on the Windows runner, which silently produced a jar without the DLL.
+    from(nativeOutputDir.map { it.file(libFile) }) {
         into(resourceDir)
     }
 }

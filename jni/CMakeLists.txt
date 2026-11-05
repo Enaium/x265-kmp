@@ -148,9 +148,9 @@ if(BUILD_JNI)
     # MinGW names shared libraries lib*.dll by default; the Kotlin loader uses
     # the unprefixed x265_jni.dll.
     set_target_properties(x265_jni PROPERTIES PREFIX "")
-    # Keep the JNI library self-contained: no MinGW runtime DLLs on the load
-    # path of a consumer JVM.
-    target_link_options(x265_jni PRIVATE -static-libgcc -static-libstdc++)
+    # Keep the JNI library self-contained: no MinGW runtime DLLs (libgcc,
+    # libstdc++, libwinpthread) on the load path of a consumer JVM.
+    target_link_options(x265_jni PRIVATE -static -static-libgcc -static-libstdc++)
   endif()
 
   if(ANDROID)
