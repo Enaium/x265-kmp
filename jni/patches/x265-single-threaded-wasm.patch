@@ -1,0 +1,117 @@
+diff --git a/source/common/threading.cpp b/source/common/threading.cpp
+index 34fe62ddc..a151e926a 100644
+--- a/source/common/threading.cpp
++++ b/source/common/threading.cpp
+@@ -144,6 +144,11 @@ static void *ThreadShim(void *opaque)
+ 
+ bool Thread::start()
+ {
++#ifdef XKY_SINGLE_THREADED
++    /* No thread support on this platform: run the body inline. */
++    runWithoutThread();
++    return true;
++#else
+     if (pthread_create(&thread, NULL, ThreadShim, this))
+     {
+         thread = 0;
+@@ -151,6 +156,7 @@ bool Thread::start()
+     }
+ 
+     return true;
++#endif
+ }
+ 
+ void Thread::stop()
+diff --git a/source/common/threading.h b/source/common/threading.h
+index b915c78a5..4c92da987 100644
+--- a/source/common/threading.h
++++ b/source/common/threading.h
+@@ -845,6 +845,12 @@ public:
+     //< Derived class must implement ThreadMain.
+     virtual void threadMain() = 0;
+ 
++#ifdef XKY_SINGLE_THREADED
++    //< Platforms without threads (Emscripten) run the thread body inline
++    //< instead of spawning it. Derived classes implement this hook.
++    virtual void runWithoutThread() {}
++#endif
++
+     //< Returns true if thread was successfully created
+     bool start();
+ 
+diff --git a/source/encoder/frameencoder.cpp b/source/encoder/frameencoder.cpp
+index c8bf12508..907db9ba0 100644
+--- a/source/encoder/frameencoder.cpp
++++ b/source/encoder/frameencoder.cpp
+@@ -292,13 +292,33 @@ bool FrameEncoder::startCompressFrame(Frame* curFrame[MAX_LAYERS])
+     }
+ 
+     m_enable.trigger();
++
++#ifdef XKY_SINGLE_THREADED
++    /* There is no worker thread to wake up: encode the frame now, exactly what
++     * threadMain() would have done after m_enable.wait(). */
++    compressFrameSynchronous();
++#endif
++
+     return true;
+ }
+ 
+-void FrameEncoder::threadMain()
++#ifdef XKY_SINGLE_THREADED
++void FrameEncoder::runWithoutThread()
+ {
+-    THREAD_NAME("Frame", m_jpId);
++    initThreadLocalData();
++    m_done.trigger();     /* Encoder::configure() waits for this */
++}
+ 
++void FrameEncoder::compressFrameSynchronous()
++{
++    for (int layer = 0; layer < m_param->numLayers; layer++)
++        compressFrame(layer);
++    m_done.trigger();     /* getEncodedPicture() waits for this */
++}
++#endif
++
++void FrameEncoder::initThreadLocalData()
++{
+     if (m_pool)
+     {
+         m_pool->setCurrentThreadAffinity();
+@@ -342,6 +362,14 @@ void FrameEncoder::threadMain()
+         m_localTldIdx = 0;
+     }
+ 
++}
++
++void FrameEncoder::threadMain()
++{
++    THREAD_NAME("Frame", m_jpId);
++
++    initThreadLocalData();
++
+     m_done.trigger();     /* signal that thread is initialized */
+     m_enable.wait();      /* Encoder::encode() triggers this event */
+ 
+diff --git a/source/encoder/frameencoder.h b/source/encoder/frameencoder.h
+index 2d039e031..60fb4e2e8 100644
+--- a/source/encoder/frameencoder.h
++++ b/source/encoder/frameencoder.h
+@@ -187,6 +187,16 @@ public:
+ 
+     void destroy();
+ 
++    /* Allocates the per-thread state used by compressFrame(). */
++    void initThreadLocalData();
++
++#ifdef XKY_SINGLE_THREADED
++    /* x265 always drives frame encoders from a worker thread. WebAssembly
++     * builds have no pthreads, so the same work is executed inline. */
++    virtual void runWithoutThread();
++    void compressFrameSynchronous();
++#endif
++
+     /* triggers encode of a new frame by the worker thread */
+     bool startCompressFrame(Frame* curFrame[MAX_LAYERS]);
+ 

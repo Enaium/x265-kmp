@@ -1,0 +1,21 @@
+headers = x265_kmp.h
+compilerOpts = -std=c11
+# x265 is C++ and its rate control uses libm. Kotlin/Native does not add either
+# runtime to the link line by default on these targets.
+linkerOpts.linux_x64 = -lstdc++ -lm -lpthread -ldl
+linkerOpts.linux_arm64 = -lstdc++ -lm -lpthread -ldl
+linkerOpts.mingw_x64 = -lstdc++ -lwinpthread -lm
+linkerOpts.macos_x64 = -lc++ -lm
+linkerOpts.macos_arm64 = -lc++ -lm
+linkerOpts.ios_arm64 = -lc++ -lm
+linkerOpts.ios_x64 = -lc++ -lm
+linkerOpts.ios_simulator_arm64 = -lc++ -lm
+linkerOpts.tvos_arm64 = -lc++ -lm
+linkerOpts.tvos_simulator_arm64 = -lc++ -lm
+linkerOpts.watchos_arm64 = -lc++ -lm
+linkerOpts.watchos_simulator_arm64 = -lc++ -lm
+linkerOpts.watchos_device_arm64 = -lc++ -lm
+linkerOpts.android_arm64 = -lc++_static -lm
+linkerOpts.android_arm32 = -lc++_static -lm
+linkerOpts.android_x64 = -lc++_static -lm
+linkerOpts.android_x86 = -lc++_static -lm
