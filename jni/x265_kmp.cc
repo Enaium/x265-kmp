@@ -31,6 +31,31 @@
 
 #include "x265.h"
 
+#if defined(_WIN32) && !defined(_MSC_VER)
+/*
+ * Kotlin/Native's MinGW target links an older libstdc++ than the MinGW that
+ * compiles this archive. Two entry points that recent libstdc++ headers emit
+ * are missing there:
+ *
+ *  - ios_base_library_init(), called by the std::__ioinit initializer that
+ *    <iostream> translation units emit (GCC 15);
+ *  - __throw_bad_array_new_length(), emitted by std::deque's growth path
+ *    (GCC 11).
+ *
+ * The definitions live in this translation unit (always linked, because it
+ * exports the xky_* API) rather than in an object of their own: a weak symbol
+ * does not make the linker pull an archive member in. They are weak, so a real
+ * libstdc++ definition wins wherever one exists.
+ */
+#include <cstdlib>
+
+namespace std {
+__attribute__((weak)) void ios_base_library_init() {}
+__attribute__((weak, noreturn)) void __throw_bad_array_new_length() {
+  abort();
+}
+}  // namespace std
+#endif // _WIN32 && !_MSC_VER
 
 /* x265's public header exposes neither a parameter deep-copy helper nor a
  * "describe this parameter block" call. The encoder keeps its own copy, so the
