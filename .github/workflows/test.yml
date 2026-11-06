@@ -13,7 +13,7 @@ concurrency:
 jobs:
   test-macos:
     name: Test macOS (JVM + Apple + web)
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -68,9 +68,16 @@ jobs:
       - name: Link the native example for macOS
         run: ./gradlew --no-daemon --stacktrace :examples:android-native:linkDebugExecutableMacosArm64
 
+      - name: Decode signing key
+        run: |
+          echo "${{ secrets.SIGNING_KEY }}" | tr -d ' \n' | base64 -d > "$RUNNER_TEMP/signing-key.gpg"
+
       - name: Publish to Maven Local
         run: >
           ./gradlew --no-daemon --stacktrace
+          -Psigning.keyId="${{ secrets.SIGNING_KEY_ID }}"
+          -Psigning.secretKeyRingFile="${{ runner.temp }}/signing-key.gpg"
+          -Psigning.password="${{ secrets.SIGNING_PASSWORD }}"
           :x265-kmp:publishToMavenLocal
           -x :x265-kmp:publishAndroidPublicationToMavenLocal
           -x :x265-kmp:publishLinuxX64PublicationToMavenLocal
@@ -193,9 +200,16 @@ jobs:
             echo "OK: $(du -h "$archive" | cut -f1)"
           done
 
+      - name: Decode signing key
+        run: |
+          echo "${{ secrets.SIGNING_KEY }}" | tr -d ' \n' | base64 -d > "$RUNNER_TEMP/signing-key.gpg"
+
       - name: Publish to Maven Local
         run: >
           ./gradlew --no-daemon --stacktrace
+          -Psigning.keyId="${{ secrets.SIGNING_KEY_ID }}"
+          -Psigning.secretKeyRingFile="${{ runner.temp }}/signing-key.gpg"
+          -Psigning.password="${{ secrets.SIGNING_PASSWORD }}"
           :x265-kmp:publishAndroidPublicationToMavenLocal
           :x265-kmp:publishLinuxX64PublicationToMavenLocal
           :x265-kmp:publishLinuxArm64PublicationToMavenLocal
@@ -275,8 +289,22 @@ jobs:
           if (!(Test-Path $dll)) { throw "Missing $dll" }
           Write-Output "OK: $((Get-Item $dll).Length) bytes"
 
+      - name: Decode signing key
+        shell: pwsh
+        run: |
+          [IO.File]::WriteAllBytes(
+            "$env:RUNNER_TEMP\signing-key.gpg",
+            [Convert]::FromBase64String("${{ secrets.SIGNING_KEY }}")
+          )
+
       - name: Publish to Maven Local
-        run: ./gradlew --no-daemon --stacktrace :jni-jvm-windows-x86_64:publishToMavenLocal
+        shell: cmd
+        run: >
+          ./gradlew --no-daemon --stacktrace
+          -Psigning.keyId="${{ secrets.SIGNING_KEY_ID }}"
+          -Psigning.secretKeyRingFile="${{ runner.temp }}\signing-key.gpg"
+          -Psigning.password="${{ secrets.SIGNING_PASSWORD }}"
+          :jni-jvm-windows-x86_64:publishToMavenLocal
 
       - name: Verify Maven Local artifact
         shell: pwsh
