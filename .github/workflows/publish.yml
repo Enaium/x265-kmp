@@ -23,7 +23,7 @@ name: Publish
 jobs:
   publish-macos:
     name: Publish macOS (JVM + Apple + web + darwin JNI)
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
