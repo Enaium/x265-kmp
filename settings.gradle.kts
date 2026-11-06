@@ -19,6 +19,7 @@ include(":x265-kmp")
 include(":examples:android-jvm")
 include(":examples:android-native")
 include(":examples:android-native:android")
+include(":examples:browser")
 
 // Per-OS/arch JNI artifacts that ship the prebuilt libx265_jni shared library as
 // a classpath resource. NativeLoader extracts the matching one at runtime.

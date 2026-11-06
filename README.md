@@ -147,6 +147,24 @@ X265_KMP_FRAMES=40 ./examples/android-native/build/bin/macosArm64/debugExecutabl
 ./gradlew -PandroidAbis=arm64-v8a :examples:android-native:android:assembleDebug
 ```
 
+### Browser (getUserMedia → HEVC → WebCodecs)
+
+`examples/browser` is a Kotlin/JS page. It captures the camera with
+`navigator.mediaDevices.getUserMedia()`, converts every frame to I420 and
+encodes it with `X265Encoder` (the same embedded WebAssembly module as the
+published js artifact). The Annex-B output is handed to a WebCodecs
+`VideoDecoder`, which paints the decoded HEVC stream on a second canvas.
+HEVC decoding is hardware dependent; the page uses
+`VideoDecoder.isConfigSupported()` and reports an unsupported decoder instead
+of failing silently. `getUserMedia` needs a secure context, so serve the page
+over `localhost`:
+
+```bash
+./gradlew :examples:browser:jsBrowserDistribution
+python3 -m http.server 8080 --directory examples/browser/build/dist/js/productionExecutable
+# open http://localhost:8080/
+```
+
 ## Building from source
 
 ```bash
