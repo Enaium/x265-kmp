@@ -75,6 +75,12 @@ jobs:
       - name: Build the browser example
         run: ./gradlew --no-daemon --stacktrace :examples:browser:jsBrowserDistribution
 
+      - name: Stage and smoke-test the @enaium/x265-kmp npm package
+        run: |
+          ./gradlew --no-daemon --stacktrace :x265-kmp:assembleWasmNpm
+          node --check x265-kmp/build/npm/x265_kmp_glue.js
+          node -e "import('file://' + process.cwd() + '/x265-kmp/build/npm/x265_kmp_glue.js').then(async (m) => { const api = await m.initX265Kmp(); if (api.apiBuild() <= 0) throw new Error('x265 npm package failed to initialize'); console.log('npm package apiBuild=' + api.apiBuild()); })"
+
       - name: Publish to Maven Local
         run: >
           ./gradlew --no-daemon --stacktrace

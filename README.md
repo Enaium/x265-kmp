@@ -31,6 +31,22 @@ embed the binary into the published klib and instantiate it synchronously
 through a small JS bridge. No resource lookup or async initialization is
 required at runtime.
 
+The standalone module, the JS glue and the licence are also published as the
+`@enaium/x265-kmp` npm package (`:x265-kmp:assembleWasmNpm` stages it in
+`build/npm`, `:x265-kmp:publishWasmNpm` publishes it). npm only accepts
+three-component semver, so `4.2.0.1` is published as `4.2.0-1` under the
+`latest` tag. Plain JavaScript apps instantiate it without Kotlin:
+
+```js
+import { initX265Kmp } from "@enaium/x265-kmp";
+
+const x265 = await initX265Kmp();
+console.log(x265.versionString());
+```
+
+The npm token is read from `npm.publish.key` in `~/.gradle/gradle.properties`
+(or `-Pnpm.publish.key=<token>`); CI reads the `NPM_PUBLISH_KEY` secret.
+
 Android has two paths: the JNI AAR (`:examples:android-jvm`) and the
 `androidNative*` Kotlin/Native targets (`:examples:android-native`). The native
 targets are compiled with the SDK NDK, so a consumer's `libmain.so` must link
