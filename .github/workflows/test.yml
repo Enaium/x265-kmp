@@ -73,7 +73,7 @@ jobs:
           echo "${{ secrets.SIGNING_KEY }}" | tr -d ' \n' | base64 -d > "$RUNNER_TEMP/signing-key.gpg"
 
       - name: Build the browser example
-        run: ./gradlew --no-daemon --stacktrace :examples:browser:wasmJsBrowserDistribution
+        run: ./gradlew --no-daemon --stacktrace :examples:common:wasmJsBrowserDistribution
 
       - name: Stage and smoke-test the @enaium/x265-kmp npm package
         run: |

@@ -1,12 +1,10 @@
-package cn.enaium.x265.examples.browser
+package cn.enaium.x265.examples.common
 
-import cn.enaium.x265.examples.common.AppFrameDriver
-import cn.enaium.x265.examples.common.runExample
 import kotlinx.browser.window
 
 /**
- * The browser cannot block the main thread, so requestAnimationFrame drives
- * the shared SDL/ImGui loop one step at a time.
+ * Browser entry point. index.html loads the SDL, imgui and camera runtimes
+ * first; requestAnimationFrame then drives the shared SDL/ImGui loop.
  */
 private val browserDriver: AppFrameDriver = { step, done ->
     fun tick() {
