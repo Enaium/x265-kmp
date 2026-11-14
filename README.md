@@ -175,7 +175,7 @@ the browser runtimes are `@enaium/sdl-kmp@3.4.18-2`,
 ```bash
 git submodule update --init --recursive
 ./gradlew :x265-kmp:jvmTest                 # JNI + tests
-./gradlew :examples:android-jvm:assembleDebug      # camera example
+./gradlew :examples:android-jvm:assembleDebug   # Android host
 ./gradlew :x265-kmp:buildWebWasm            # Emscripten module
 ```
 
