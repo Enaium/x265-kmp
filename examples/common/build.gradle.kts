@@ -171,6 +171,7 @@ kotlin {
                 implementation(libs.sdl.kmp)
                 implementation(libs.imgui.kmp)
                 implementation(libs.camera.kmp)
+                implementation(libs.libde265.kmp)
             }
         }
 

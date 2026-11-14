@@ -1,23 +1,6 @@
 /*
  * Copyright (c) 2026 Enaium
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 package cn.enaium.x265.examples.common
@@ -33,6 +16,7 @@ import cn.enaium.imgui.backends.sdl.ImGuiSdlBackend
 import cn.enaium.imgui.backends.sdl.ImGuiSdlRendererBackend
 import cn.enaium.imgui.backends.sdl.toImTextureID
 import cn.enaium.libyuv.LibYuv
+import cn.enaium.x265.X265
 import cn.enaium.sdl.SDL
 import cn.enaium.sdl.SDLBlendMode
 import cn.enaium.sdl.SDLColor
@@ -44,21 +28,14 @@ import cn.enaium.sdl.SDLTexture
 import cn.enaium.sdl.SDLTextureAccess
 import cn.enaium.sdl.SDLWindowEventType
 import cn.enaium.sdl.SDLWindowFlags
-import cn.enaium.x265.X265
 import kotlin.math.min
 
-/**
- * Host-owned browser frame loop: the browser cannot block, so wasm drives
- * [step] from requestAnimationFrame and calls [done] when it returns false.
- */
+/** Host-owned browser frame loop: wasm drives it from requestAnimationFrame. */
 typealias AppFrameDriver = (step: () -> Boolean, done: () -> Unit) -> Unit
 
 /**
- * The shared SDL3 + ImGui example used by the JVM, native, Android (JVM and
- * native) and wasmJs hosts.
- *
- * The window, renderer and ImGui backends live here; [ExamplePipeline] owns
- * the camera (camera-kmp) and the x265 encoder.
+ * Shared SDL3 + ImGui example. The left picture is the camera-kmp capture, the
+ * right one is the same picture after the codec round trip.
  */
 fun runExample(frames: Int = Int.MAX_VALUE, driver: AppFrameDriver? = null) {
     SDL.setMainReady()
@@ -89,6 +66,11 @@ fun runExample(frames: Int = Int.MAX_VALUE, driver: AppFrameDriver? = null) {
     fun finish() {
         if (finished) return
         finished = true
+        val status = pipeline.status
+        println(
+            "example: encoded=${status.encodedFrames} decoded=${status.decodedFrames} " +
+                "bytes=${status.encodedBytes} error=${status.error}",
+        )
         pipeline.close()
         backend.close()
         ImGui.destroyContext(context)
@@ -153,7 +135,7 @@ fun runExample(frames: Int = Int.MAX_VALUE, driver: AppFrameDriver? = null) {
     }
 }
 
-/** Uploads the latest camera picture into one streaming SDL texture. */
+/** Uploads an I420 picture into one streaming SDL texture. */
 private class FrameTextures(
     private val renderer: cn.enaium.sdl.SDLRenderer,
     private val backend: ImGuiSdlRendererBackend,
@@ -194,22 +176,26 @@ private class FrameTextures(
     }
 }
 
-/** Draws the statistics and the camera picture; identical on every host. */
+/** Statistics window with the camera and the decoded picture side by side. */
 private class ExampleUi(
     renderer: cn.enaium.sdl.SDLRenderer,
     backend: ImGuiSdlRendererBackend,
 ) {
-    private val textures = FrameTextures(renderer, backend)
-    private var lastFrame: I420Frame? = null
+    private val cameraTextures = FrameTextures(renderer, backend)
+    private val decodedTextures = FrameTextures(renderer, backend)
+    private var lastCamera: I420Frame? = null
+    private var lastDecoded: I420Frame? = null
     private var fpsSince = SDL.getTicks()
     private var fpsFrames = 0
     private var uiFps = 0f
     private var lastEncoded = 0L
+    private var lastDecodedCount = 0L
     private var encodeRate = 0f
+    private var decodeRate = 0f
 
     fun draw(pipeline: ExamplePipeline) {
-        val frame = pipeline.preview
-        if (frame != null) lastFrame = frame
+        pipeline.preview?.let { lastCamera = it }
+        pipeline.decoded?.let { lastDecoded = it }
         val status = pipeline.status
         updateRates(status)
 
@@ -218,11 +204,11 @@ private class ExampleUi(
         ImGui.setNextWindowSize(display, ImGuiCond.ALWAYS)
         ImGui.begin("x265-kmp", null, WINDOW_FLAGS)
 
-        ImGui.text("x265 ${X265.libraryVersion} (api ${X265.apiBuild}) - ${X265.VERSION}")
+        ImGui.text("x265 ${X265.libraryVersion} (api ${X265.apiBuild}) - camera-kmp + ${platformDecoderName} decode")
         ImGui.text("camera: ${status.source}")
         ImGui.text(
-            "ui ${uiFps.toInt()} fps  |  encode ${encodeRate.toInt()}/s  |  " +
-                "encoded ${status.encodedFrames}  |  ${status.encodedBytes} bytes  |  " +
+            "ui ${uiFps.toInt()} fps  |  encode ${encodeRate.toInt()}/s  decode ${decodeRate.toInt()}/s  |  " +
+                "encoded ${status.encodedFrames}  |  decoded ${status.decodedFrames}  |  " +
                 "last ${status.lastFrameSize} B",
         )
         ImGui.text("bitrate: ${bitrateKbps(status)} kbit/s")
@@ -232,18 +218,34 @@ private class ExampleUi(
         ImGui.separator()
 
         val available = ImGui.getContentRegionAvail()
-        val picture = lastFrame
-        if (picture == null) {
-            ImGui.text("waiting for the first camera frame...")
-            ImGui.end()
+        val gap = 8f
+        val halfWidth = (available.x - gap) / 2f
+        drawPicture("camera (camera-kmp)", lastCamera, cameraTextures, halfWidth, available.y)
+        ImGui.sameLine(0f, gap)
+        drawPicture("decoded (${platformDecoderName})", lastDecoded, decodedTextures, halfWidth, available.y)
+        ImGui.end()
+    }
+
+    private fun drawPicture(
+        label: String,
+        frame: I420Frame?,
+        textures: FrameTextures,
+        width: Float,
+        height: Float,
+    ) {
+        ImGui.beginChild(label, ImVec2(width, height))
+        ImGui.text(label)
+        if (frame == null) {
+            ImGui.text("waiting for a picture...")
+            ImGui.endChild()
             return
         }
-        val scale = min(available.x / picture.width, available.y / picture.height).coerceAtLeast(0f)
+        val room = ImGui.getContentRegionAvail()
+        val scale = min(room.x / frame.width, room.y / frame.height).coerceAtLeast(0f)
         if (scale > 0f) {
-            val texture = textures.upload(picture)
-            ImGui.image(texture, ImVec2(picture.width * scale, picture.height * scale))
+            ImGui.image(textures.upload(frame), ImVec2(frame.width * scale, frame.height * scale))
         }
-        ImGui.end()
+        ImGui.endChild()
     }
 
     private fun updateRates(status: ExampleStatus) {
@@ -254,7 +256,9 @@ private class ExampleUi(
             val seconds = elapsed.toFloat() / 1_000f
             uiFps = fpsFrames / seconds
             encodeRate = (status.encodedFrames - lastEncoded) / seconds
+            decodeRate = (status.decodedFrames - lastDecodedCount) / seconds
             lastEncoded = status.encodedFrames
+            lastDecodedCount = status.decodedFrames
             fpsSince = now
             fpsFrames = 0
         }
