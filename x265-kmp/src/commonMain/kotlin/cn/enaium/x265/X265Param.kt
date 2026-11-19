@@ -25,7 +25,7 @@ package cn.enaium.x265
 /** Version information of the bundled x265 build and of this binding. */
 object X265 {
     /** Version of the Kotlin bindings; the upstream release plus the binding revision. */
-    const val VERSION: String = "4.2.0.1"
+    const val VERSION: String = "1.0.1-fixed.4.2.0"
 
     /** The upstream x265 release this binding ships, e.g. `"4.2"`. */
     val libraryVersion: String by lazy { X265Native.versionString() }

@@ -102,8 +102,8 @@ jobs:
       - name: Verify Maven Local artifacts
         run: |
           REPO="$HOME/.m2/repository/cn/enaium/x265"
-          JVM_POM="$REPO/x265-kmp-jvm/4.2.0.1/x265-kmp-jvm-4.2.0.1.pom"
-          JNI_JAR="$REPO/x265-kmp-jni-jvm-darwin-aarch64/4.2.0.1/x265-kmp-jni-jvm-darwin-aarch64-4.2.0.1.jar"
+          JVM_POM="$REPO/x265-kmp-jvm/1.0.1-fixed.4.2.0/x265-kmp-jvm-1.0.1-fixed.4.2.0.pom"
+          JNI_JAR="$REPO/x265-kmp-jni-jvm-darwin-aarch64/1.0.1-fixed.4.2.0/x265-kmp-jni-jvm-darwin-aarch64-1.0.1-fixed.4.2.0.jar"
           test -f "$JVM_POM" || { echo "FAIL: JVM POM missing"; exit 1; }
           grep -q "x265-kmp-jni-jvm-darwin-aarch64" "$JVM_POM" || { echo "FAIL: JVM POM lacks JNI runtime dependency"; exit 1; }
           test -f "$JNI_JAR" || { echo "FAIL: darwin JNI jar missing"; exit 1; }
@@ -116,7 +116,7 @@ jobs:
             x265-kmp-tvosarm64 x265-kmp-tvossimulatorarm64 \
             x265-kmp-watchosarm64 x265-kmp-watchossimulatorarm64 x265-kmp-watchosdevicearm64 \
             x265-kmp-js x265-kmp-wasm-js; do
-            if [ ! -d "$REPO/$artifact/4.2.0.1" ]; then
+            if [ ! -d "$REPO/$artifact/1.0.1-fixed.4.2.0" ]; then
               echo "FAIL: missing Maven Local artifact $artifact"
               exit 1
             fi
@@ -233,7 +233,7 @@ jobs:
       - name: Verify Maven Local artifacts
         run: |
           REPO="$HOME/.m2/repository/cn/enaium/x265"
-          AAR=$(find "$REPO" -path "*x265-kmp-android/4.2.0.1/*.aar" -print -quit)
+          AAR=$(find "$REPO" -path "*x265-kmp-android/1.0.1-fixed.4.2.0/*.aar" -print -quit)
           test -n "$AAR" || { echo "FAIL: Android AAR missing"; exit 1; }
           for abi in arm64-v8a armeabi-v7a x86 x86_64; do
             unzip -l "$AAR" | grep -q "jni/$abi/libx265_jni.so" || {
@@ -241,7 +241,7 @@ jobs:
               exit 1
             }
           done
-          JNI_JAR="$REPO/x265-kmp-jni-jvm-linux-x86_64/4.2.0.1/x265-kmp-jni-jvm-linux-x86_64-4.2.0.1.jar"
+          JNI_JAR="$REPO/x265-kmp-jni-jvm-linux-x86_64/1.0.1-fixed.4.2.0/x265-kmp-jni-jvm-linux-x86_64-1.0.1-fixed.4.2.0.jar"
           test -f "$JNI_JAR" || { echo "FAIL: linux JNI jar missing"; exit 1; }
           unzip -l "$JNI_JAR" | grep -q "libx265_jni.so" || { echo "FAIL: .so missing from linux JNI jar"; exit 1; }
           test -n "$(find "$REPO" -name '*.klib' -print -quit)" || { echo "FAIL: no Linux/MinGW klib published"; exit 1; }
@@ -251,7 +251,7 @@ jobs:
             x265-kmp-mingwx64 \
             x265-kmp-androidnativearm64 x265-kmp-androidnativearm32 \
             x265-kmp-androidnativex64 x265-kmp-androidnativex86; do
-            if [ ! -d "$REPO/$artifact/4.2.0.1" ]; then
+            if [ ! -d "$REPO/$artifact/1.0.1-fixed.4.2.0" ]; then
               echo "FAIL: missing Maven Local artifact $artifact"
               exit 1
             fi
@@ -318,7 +318,7 @@ jobs:
       - name: Verify Maven Local artifact
         shell: pwsh
         run: |
-          $jar = Join-Path $env:USERPROFILE ".m2\repository\cn\enaium\x265\x265-kmp-jni-jvm-windows-x86_64\4.2.0.1\x265-kmp-jni-jvm-windows-x86_64-4.2.0.1.jar"
+          $jar = Join-Path $env:USERPROFILE ".m2\repository\cn\enaium\x265\x265-kmp-jni-jvm-windows-x86_64\1.0.1-fixed.4.2.0\x265-kmp-jni-jvm-windows-x86_64-1.0.1-fixed.4.2.0.jar"
           if (!(Test-Path $jar)) { throw "Missing $jar" }
           $entries = & jar tf $jar
           if (-not ($entries -match "x265_jni.dll")) { throw "x265_jni.dll missing from $jar" }

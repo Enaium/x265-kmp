@@ -470,14 +470,21 @@ tasks.matching {
 // contains the .wasm file, a loader that exposes the xky_* entry points on
 // globalThis.__x265Web, and the licence.
 //
-// npm only accepts three-component semver, so the fourth component of the
-// Gradle version (4.2.0.1) becomes a prerelease suffix (4.2.0-1); published
-// with the `latest` tag so `npm i @enaium/x265-kmp` keeps working.
+// The fixed version is already valid npm semver and is published verbatim
+// with the `latest` tag so `npm i @enaium/x265-kmp` keeps working. Legacy
+// four-component Gradle versions become "x.y.z-r".
 val npmPackageVersion: String by lazy {
-    val parts = rootProject.version.toString().split('.')
-    val base = parts.take(3).joinToString(".")
-    val revision = parts.drop(3).joinToString(".")
-    if (revision.isEmpty()) base else "$base-$revision"
+    val value = rootProject.version.toString()
+    // Fixed builds already use a three-component prerelease version that npm
+    // accepts verbatim; legacy four-component versions become "x.y.z-r".
+    if (value.contains("-fixed.")) {
+        value
+    } else {
+        val parts = value.split('.')
+        val base = parts.take(3).joinToString(".")
+        val revision = parts.drop(3).joinToString(".")
+        if (revision.isEmpty()) base else "$base-$revision"
+    }
 }
 
 val webGlueSource = rootProject.file("x265-kmp/src/webMain/kotlin/cn/enaium/x265/X265WebGlue.kt")

@@ -35,7 +35,7 @@ class X265Test {
 
     @Test
     fun versionMatchesThePinnedRelease() {
-        assertEquals("4.2.0.1", X265.VERSION)
+        assertEquals("1.0.1-fixed.4.2.0", X265.VERSION)
         assertEquals("4.2", X265.libraryVersion)
         assertEquals(40200, X265.libraryVersionPacked)
         assertEquals(8, X265.BIT_DEPTH)

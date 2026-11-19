@@ -8,7 +8,7 @@ target. One C ABI (`jni/include/x265_kmp.h`) drives the JNI bridge, the
 Kotlin/Native cinterop and the WebAssembly build, so every platform shares the
 same parameter handling, input validation and result format.
 
-Binding version: **4.2.0.1** (x265 4.2, binding revision 1).
+Binding version: **1.0.1-fixed.4.2.0** (x265 4.2, binding revision 1).
 
 ## Supported targets
 
@@ -33,9 +33,9 @@ required at runtime.
 
 The standalone module, the JS glue and the licence are also published as the
 `@enaium/x265-kmp` npm package (`:x265-kmp:assembleWasmNpm` stages it in
-`build/npm`, `:x265-kmp:publishWasmNpm` publishes it). npm only accepts
-three-component semver, so `4.2.0.1` is published as `4.2.0-1` under the
-`latest` tag. Plain JavaScript apps instantiate it without Kotlin:
+`build/npm`, `:x265-kmp:publishWasmNpm` publishes it). The fixed version is
+already valid npm semver, so it is published verbatim under the `latest` tag.
+Plain JavaScript apps instantiate it without Kotlin:
 
 ```js
 import { initX265Kmp } from "@enaium/x265-kmp";
@@ -64,7 +64,7 @@ x265's normal thread pool.
 
 ```kotlin
 dependencies {
-    implementation("cn.enaium.x265:x265-kmp:4.2.0.1")
+    implementation("cn.enaium.x265:x265-kmp:1.0.1-fixed.4.2.0")
 }
 ```
 
